@@ -1,31 +1,31 @@
 import express from 'express';
+import { config } from './src/config/config.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { checkRequiredEnvVars } from './src/utils/checkEnv.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const port = 3111;
 
 app.use(express.json());
 app.use(express.static('public'));
 
-// In-memory storage (in a real app, you'd use a database)
-let dailyEntries = [];
-
+// Serve static files
 app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: 'public' });
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/api/entries', (req, res) => {
-    const entry = {
-        id: Date.now(),
-        date: new Date().toISOString().split('T')[0],
-        ...req.body
-    };
-    dailyEntries.push(entry);
-    res.json(entry);
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-app.get('/api/entries', (req, res) => {
-    res.json(dailyEntries);
-});
+// Check environment variables before starting the server
+checkRequiredEnvVars();
 
-app.listen(port, () => {
-    console.log(`App is live at http://localhost:${port}`);
+const PORT = config.server.port;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Environment: ${config.server.env}`);
 });

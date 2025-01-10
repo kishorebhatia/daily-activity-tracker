@@ -3,11 +3,12 @@
   "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
-    "express": "latest",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "nodemon": "latest",
     "firebase": "^10.7.1",
     "firebase-admin": "^11.11.1"
