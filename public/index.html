@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Activity Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="/" class="active">Daily Entry</a>
+        <a href="/dashboard.html">Dashboard</a>
+    </nav>
+    
+    <div class="container">
+        <h1>Track Your Day</h1>
+        <div class="form-card">
+            <div class="calendar-wrapper">
+                <div class="calendar-header">
+                    <button type="button" id="prevPeriod">←</button>
+                    <h2 id="currentPeriod">September 2023</h2>
+                    <button type="button" id="nextPeriod">→</button>
+                </div>
+                <div class="calendar" id="calendar">
+                    <!-- Calendar will be rendered here -->
+                </div>
+                <div class="entry-preview" id="entryPreview">
+                    <!-- Entry preview will appear here -->
+                </div>
+            </div>
+            <form id="trackerForm">
+                <input type="hidden" id="selectedDate" name="selectedDate">
+                <div class="form-group">
+                    <label for="yoga">Yoga (minutes)</label>
+                    <input type="number" id="yoga" name="yoga" required min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="cardio">Cardio (minutes)</label>
+                    <input type="number" id="cardio" name="cardio" required min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="sleep">Sleep (hours)</label>
+                    <input type="number" id="sleep" name="sleep" required min="0" step="0.5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="dailyGratitude">Daily Gratitude</label>
+                    <textarea id="dailyGratitude" name="dailyGratitude" required></textarea>
+                </div>
+                
+                <button type="submit">Save Entry</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
