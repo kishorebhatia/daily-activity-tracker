@@ -7,23 +7,19 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
 </head>
-<body class="dashboard-page">
+<body>
     <nav class="top-nav">
         <a href="/">Daily Entry</a>
         <a href="/dashboard.html" class="active">Dashboard</a>
     </nav>
     
     <div class="container">
-        <h1>Wellness Dashboard</h1>
-        <div id="dashboard"></div>
-        
-        <div class="entries">
-            <h2>Recent Entries</h2>
-            <div id="entriesList"></div>
+        <h1>Your Activity History</h1>
+        <div id="dashboard">
+            <!-- Entries will be loaded here -->
         </div>
     </div>
 
-    <!-- Firebase Scripts -->
     <script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
     <script type="module" src="js/pages/dashboard.js"></script>

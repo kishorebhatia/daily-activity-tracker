@@ -1,260 +1,206 @@
-import { db } from './firebase-config.js';
-import { collection, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { firebaseService } from './firebase.js';
+import * as dateUtils from './utils/dates.js';
+import * as uiUtils from './utils/ui.js';
+import { collection, addDoc, query, where, getDocs, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { Entry } from './models/Entry.js';
 
-let selectedDate = new Date();
-let currentMonth = new Date();
-let existingEntries = new Set();
+class ActivityTracker {
+    constructor() {
+        this.selectedDate = new Date();
+        this.existingEntries = new Map();
+        this.db = null;
+        this.initialized = false;
+    }
 
-// Initialize calendar when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initializeCalendar();
-    loadExistingEntries();
-    // Set the initial selected date
-    document.getElementById('selectedDate').value = selectedDate.toISOString().split('T')[0];
-});
+    async initialize() {
+        try {
+            uiUtils.showLoading(true);
+            this.db = await firebaseService.initialize();
+            await this.loadExistingEntries();
+            this.initializeCalendar();
+            this.initializeEventListeners();
+            this.initialized = true;
+        } catch (error) {
+            uiUtils.showError('Failed to initialize application');
+            console.error(error);
+        } finally {
+            uiUtils.showLoading(false);
+        }
+    }
 
-async function loadExistingEntries() {
-    try {
-        const entriesRef = collection(db, 'daily_entries');
-        const querySnapshot = await getDocs(entriesRef);
-        existingEntries.clear();
+    async loadExistingEntries() {
+        try {
+            const entriesRef = collection(this.db, 'daily_entries');
+            const querySnapshot = await getDocs(entriesRef);
+            this.existingEntries.clear();
+            
+            querySnapshot.forEach(doc => {
+                const data = { id: doc.id, ...doc.data() };
+                const date = data.date;
+                
+                if (!this.existingEntries.has(date)) {
+                    this.existingEntries.set(date, []);
+                }
+                this.existingEntries.get(date).push(data);
+            });
+        } catch (error) {
+            throw new Error('Failed to load entries: ' + error.message);
+        }
+    }
+
+    initializeCalendar() {
+        this.renderCalendar();
+        document.getElementById('selectedDate').value = dateUtils.formatDate(this.selectedDate);
+    }
+
+    renderCalendar() {
+        const calendar = document.getElementById('calendar');
+        const currentMonthLabel = document.getElementById('currentPeriod');
         
-        querySnapshot.forEach(doc => {
-            const data = doc.data();
-            // Normalize the date to local timezone
-            const entryDate = new Date(data.date);
-            const dateString = entryDate.toISOString().split('T')[0];
-            existingEntries.add(dateString);
+        if (!calendar || !currentMonthLabel) {
+            console.error('Calendar elements not found');
+            return;
+        }
+
+        // Clear existing calendar
+        calendar.innerHTML = '';
+        
+        const today = new Date();
+        
+        // Update month/year display
+        currentMonthLabel.textContent = today.toLocaleDateString('en-US', { 
+            month: 'long', 
+            year: 'numeric' 
         });
+
+        // Add day headers
+        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        daysOfWeek.forEach(day => {
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'calendar-day-header';
+            dayHeader.textContent = day;
+            calendar.appendChild(dayHeader);
+        });
+
+        // Get first day of month and total days
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         
-        console.log('Loaded existing entries:', existingEntries);
-        renderCalendar();
-    } catch (error) {
-        console.error('Error loading entries:', error);
-    }
-}
+        // Add empty cells for days before first day of month
+        for (let i = 0; i < firstDay.getDay(); i++) {
+            calendar.appendChild(this.createEmptyDay());
+        }
 
-function initializeCalendar() {
-    document.getElementById('prevPeriod').addEventListener('click', () => {
-        currentMonth.setMonth(currentMonth.getMonth() - 1);
-        renderCalendar();
-    });
-
-    document.getElementById('nextPeriod').addEventListener('click', () => {
-        currentMonth.setMonth(currentMonth.getMonth() + 1);
-        renderCalendar();
-    });
-
-    renderCalendar();
-}
-
-function renderCalendar() {
-    const calendar = document.getElementById('calendar');
-    const currentMonthLabel = document.getElementById('currentPeriod');
-    
-    // Update month label
-    currentMonthLabel.textContent = currentMonth.toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-    });
-
-    // Clear calendar
-    calendar.innerHTML = '';
-
-    // Add day headers
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    days.forEach(day => {
-        const dayHeader = document.createElement('div');
-        dayHeader.className = 'calendar-day-header';
-        dayHeader.textContent = day;
-        calendar.appendChild(dayHeader);
-    });
-
-    // Get first day of month and total days
-    const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-    
-    // Add empty cells for days before first day of month
-    for (let i = 0; i < firstDay.getDay(); i++) {
-        const emptyDay = document.createElement('div');
-        emptyDay.className = 'calendar-day empty';
-        calendar.appendChild(emptyDay);
+        // Add days of month
+        for (let date = 1; date <= lastDay.getDate(); date++) {
+            calendar.appendChild(this.createDayElement(date));
+        }
     }
 
-    // Add days of month
-    for (let date = 1; date <= lastDay.getDate(); date++) {
+    createDayElement(date) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day';
         dayElement.textContent = date;
 
-        const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date);
-        const dateString = currentDate.toISOString().split('T')[0];
-        dayElement.dataset.date = dateString;
+        const today = new Date();
+        const dayDate = new Date(today.getFullYear(), today.getMonth(), date, 12, 0, 0);
+        const dateString = dateUtils.formatDate(dayDate);
 
         // Add classes for today and selected date
-        if (isToday(currentDate)) {
+        if (dateUtils.isToday(dayDate)) {
             dayElement.classList.add('today');
         }
-        if (isSameDate(currentDate, selectedDate)) {
+        if (dateUtils.isSameDate(dayDate, this.selectedDate)) {
             dayElement.classList.add('selected');
         }
 
         // Check for existing entries
-        if (existingEntries.has(dateString)) {
-            console.log('Found entry for date:', dateString);
+        const existingEntry = this.existingEntries.get(dateString);
+        if (existingEntry) {
             dayElement.classList.add('has-entry');
-            dayElement.addEventListener('mouseenter', () => showEntryPreview(currentDate));
-            dayElement.addEventListener('mouseleave', hideEntryPreview);
+            dayElement.addEventListener('mouseenter', (e) => uiUtils.showEntryPreview(e, existingEntry, dayDate));
+            dayElement.addEventListener('mouseleave', uiUtils.hideEntryPreview);
         }
 
+        // Add click handler
         dayElement.addEventListener('click', () => {
-            selectedDate = currentDate;
+            this.selectedDate = dayDate;
             document.getElementById('selectedDate').value = dateString;
             
-            // Update visual selection
+            // Update selected state
             document.querySelectorAll('.calendar-day').forEach(day => {
                 day.classList.remove('selected');
             });
             dayElement.classList.add('selected');
         });
 
-        calendar.appendChild(dayElement);
+        return dayElement;
     }
-}
 
-function isToday(date) {
-    const today = new Date();
-    return isSameDate(date, today);
-}
+    createEmptyDay() {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty';
+        return emptyDay;
+    }
 
-function isSameDate(date1, date2) {
-    return date1.getDate() === date2.getDate() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getFullYear() === date2.getFullYear();
-}
+    initializeEventListeners() {
+        const form = document.getElementById('trackerForm');
+        if (!form) return;
 
-async function showEntryPreview(date) {
-    const preview = document.getElementById('entryPreview');
-    const dateString = date.toISOString().split('T')[0];
-    
-    try {
-        const entriesRef = collection(db, 'daily_entries');
-        const q = query(entriesRef, where('date', '==', dateString));
-        const querySnapshot = await getDocs(q);
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleFormSubmit(e);
+        });
+    }
+
+    async handleFormSubmit(e) {
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner"></span> Saving...';
         
-        if (!querySnapshot.empty) {
-            const entry = querySnapshot.docs[0].data();
-            // Create date with time set to noon to avoid timezone issues
-            const displayDate = new Date(entry.date + 'T12:00:00');
-            preview.innerHTML = `
-                <div class="preview-content">
-                    <h4>${displayDate.toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    })}</h4>
-                    <div class="preview-stat">
-                        <span class="preview-icon">🧘</span>
-                        <span>${entry.yoga} min yoga</span>
-                    </div>
-                    <div class="preview-stat">
-                        <span class="preview-icon">🏃‍♂️</span>
-                        <span>${entry.cardio} min cardio</span>
-                    </div>
-                    <div class="preview-stat">
-                        <span class="preview-icon">😴</span>
-                        <span>${entry.sleep} hrs sleep</span>
-                    </div>
-                    <div class="preview-gratitude">
-                        <small>🙏 ${entry.daily_gratitude}</small>
-                    </div>
-                </div>
-            `;
-            preview.classList.add('visible');
-        }
-    } catch (error) {
-        console.error('Error loading entry preview:', error);
-    }
-}
-
-function hideEntryPreview() {
-    const preview = document.getElementById('entryPreview');
-    preview.classList.remove('visible');
-}
-
-// Form submission handler
-document.getElementById('trackerForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const selectedDateValue = document.getElementById('selectedDate').value;
-    if (!selectedDateValue) {
-        alert('Please select a date first');
-        return;
-    }
-
-    // Create date in local timezone
-    const entryDate = new Date(selectedDateValue);
-    const formattedDate = entryDate.toISOString().split('T')[0];
-
-    const formData = {
-        yoga: parseInt(document.getElementById('yoga').value),
-        cardio: parseInt(document.getElementById('cardio').value),
-        sleep: parseFloat(document.getElementById('sleep').value),
-        daily_gratitude: document.getElementById('dailyGratitude').value,
-        date: formattedDate,
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        // Check if entry already exists for this date
-        const entriesRef = collection(db, 'daily_entries');
-        const q = query(entriesRef, where('date', '==', formattedDate));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-            if (!confirm('An entry already exists for this date. Do you want to add another entry?')) {
-                return;
+        try {
+            const selectedDateValue = document.getElementById('selectedDate').value;
+            if (!selectedDateValue) {
+                throw new Error('Please select a date first');
             }
+
+            const entry = new Entry({
+                yoga: parseInt(document.getElementById('yoga').value),
+                cardio: parseInt(document.getElementById('cardio').value),
+                sleep: parseFloat(document.getElementById('sleep').value),
+                daily_gratitude: document.getElementById('dailyGratitude').value.trim(),
+                date: selectedDateValue,
+            });
+
+            await this.saveEntry(entry);
+            uiUtils.showSuccess();
+            e.target.reset();
+            
+            // Update local entries
+            if (!this.existingEntries.has(entry.date)) {
+                this.existingEntries.set(entry.date, []);
+            }
+            this.existingEntries.get(entry.date).push(entry);
+            this.renderCalendar();
+            
+        } catch (error) {
+            uiUtils.showError(error.message);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Save Entry';
         }
-
-        await addDoc(collection(db, 'daily_entries'), formData);
-        showSuccessMessage();
-        e.target.reset();
-        
-        // Update calendar to show new entry
-        existingEntries.add(formattedDate);
-        renderCalendar();
-        
-        // Reset date selection to today
-        selectedDate = new Date();
-        document.getElementById('selectedDate').value = selectedDate.toISOString().split('T')[0];
-    } catch (error) {
-        console.error('Error saving entry:', error);
-        showErrorMessage();
     }
-});
 
-function showSuccessMessage() {
-    const button = document.querySelector('button[type="submit"]');
-    const originalText = button.textContent;
-    button.textContent = '✨ Entry Saved!';
-    button.style.backgroundColor = '#27ae60';
-    
-    setTimeout(() => {
-        button.textContent = originalText;
-        button.style.backgroundColor = '';
-    }, 2000);
+    async saveEntry(entry) {
+        try {
+            const entriesRef = collection(this.db, 'daily_entries');
+            await addDoc(entriesRef, entry.toFirestore());
+        } catch (error) {
+            throw new Error('Failed to save entry: ' + error.message);
+        }
+    }
 }
 
-function showErrorMessage() {
-    const button = document.querySelector('button[type="submit"]');
-    const originalText = button.textContent;
-    button.textContent = '❌ Error Saving Entry';
-    button.style.backgroundColor = '#c0392b';
-    
-    setTimeout(() => {
-        button.textContent = originalText;
-        button.style.backgroundColor = '';
-    }, 2000);
-} 
+// Initialize the app
+const tracker = new ActivityTracker();
+document.addEventListener('DOMContentLoaded', () => tracker.initialize()); 

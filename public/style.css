@@ -340,42 +340,26 @@ button:active {
 /* Add these calendar styles to your existing style.css */
 
 .calendar-wrapper {
-    margin-bottom: 2rem;
     background: var(--light-bg);
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
     position: relative;
+    z-index: 1;
+    overflow: visible;
 }
 
 .calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    text-align: center;
     margin-bottom: 1.5rem;
 }
 
-.calendar-header button {
-    background: transparent;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--primary-color);
-    cursor: pointer;
-    padding: 0.5rem 1rem;
-    margin: 0;
-    transition: transform 0.3s ease;
-}
-
-.calendar-header button:hover {
-    transform: scale(1.1);
-    box-shadow: none;
-}
-
 .calendar-header h2 {
-    margin: 0;
+    font-size: 1.4rem;
     color: var(--secondary-color);
-    font-size: 1.3rem;
     font-weight: 600;
+    margin: 0;
 }
 
 .calendar {
@@ -387,9 +371,10 @@ button:active {
 .calendar-day-header {
     text-align: center;
     font-weight: 600;
-    color: var(--text-color);
+    color: var(--secondary-color);
     padding: 0.5rem;
     font-size: 0.9rem;
+    text-transform: uppercase;
 }
 
 .calendar-day {
@@ -398,23 +383,32 @@ button:active {
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.8);
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: var(--text-color);
     position: relative;
     border: 2px solid transparent;
+    padding: 0.5rem;
+    min-height: 40px;
+    z-index: 2;
 }
 
-.calendar-day:hover:not(.empty):not(.selected) {
+.calendar-day:not(.empty):hover {
     background: rgba(52, 152, 219, 0.1);
     transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .calendar-day.empty {
     background: transparent;
     cursor: default;
+}
+
+.calendar-day.other-month {
+    color: #bdc3c7;
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .calendar-day.today {
@@ -426,140 +420,534 @@ button:active {
     background: var(--primary-color);
     color: white;
     font-weight: 600;
+    transform: scale(1.05);
+    box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
 }
 
 .calendar-day.has-entry::after {
-    content: '•';
+    content: '';
     position: absolute;
-    bottom: 2px;
-    color: var(--primary-color);
-    font-size: 1.2rem;
+    bottom: 4px;
+    width: 6px;
+    height: 6px;
+    background: var(--primary-color);
+    border-radius: 50%;
 }
 
 .calendar-day.selected.has-entry::after {
-    color: white;
-}
-
-@media (max-width: 768px) {
-    .calendar-day {
-        font-size: 0.8rem;
-    }
-    
-    .calendar-header h2 {
-        font-size: 1.1rem;
-    }
-}
-
-/* Add these new calendar styles */
-
-.calendar-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.view-toggle {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.view-btn {
-    background: transparent;
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.view-btn.active {
-    background: var(--primary-color);
-    color: white;
-}
-
-.date-input-group {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.custom-date-input {
-    padding: 0.5rem;
-    border: 2px solid #e0e0e0;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    width: 150px;
-}
-
-.entry-preview {
-    position: absolute;
     background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    width: 250px;
-    z-index: 100;
+}
+
+/* Entry Preview Popup */
+.entry-preview {
+    position: fixed;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    width: 280px;
+    z-index: 1000;
     display: none;
-    animation: fadeIn 0.2s ease;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    transform-origin: left center;
 }
 
 .entry-preview.visible {
     display: block;
 }
 
-.preview-content {
-    font-size: 0.9rem;
+.preview-header {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .preview-stat {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin: 0.5rem 0;
+    gap: 0.8rem;
+    margin: 0.8rem 0;
 }
 
 .preview-icon {
     font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
 }
 
-.calendar.week-view {
-    grid-template-columns: auto repeat(7, 1fr);
+.preview-value {
+    font-weight: 500;
 }
 
-.time-slot {
-    padding: 0.5rem;
-    border-right: 1px solid #eee;
-    color: #666;
-    font-size: 0.8rem;
-}
-
-.week-day {
-    border-bottom: 1px solid #eee;
-    min-height: 80px;
-    padding: 0.5rem;
-}
-
-.week-day.has-entry {
-    background: rgba(52, 152, 219, 0.1);
-}
-
-.calendar-day.in-range {
-    background: rgba(52, 152, 219, 0.2);
-}
-
-.calendar-day.range-start {
-    background: var(--primary-color);
-    color: white;
-}
-
-.calendar-day.range-end {
-    background: var(--primary-color);
-    color: white;
+.preview-gratitude {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    font-style: italic;
+    color: var(--text-color);
+    font-size: 0.9rem;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Add a subtle animation for date selection */
+@keyframes selectDate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1.05); }
+}
+
+.calendar-day.selected {
+    animation: selectDate 0.3s ease;
+}
+
+/* Dashboard Styles */
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+
+.stat-card h3 {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.entries-list {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.entry-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.entry-header h3 {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.entry-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.entry-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-icon {
+    font-size: 1.2rem;
+}
+
+.stat-label {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.entry-gratitude {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    font-style: italic;
+    color: var(--text-color);
+}
+
+.no-entries {
+    text-align: center;
+    padding: 3rem;
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.error-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--accent-color);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--primary-color);
+    border-top: 4px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.firebase-error {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.error-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    max-width: 400px;
+}
+
+.error-content h3 {
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+}
+
+.error-content button {
+    margin-top: 1rem;
+    padding: 0.8rem 2rem;
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.preview-entry {
+    padding: 1rem 0;
+}
+
+.preview-time {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
+}
+
+.preview-divider {
+    margin: 1rem 0;
+    border: none;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.entry-content {
+    padding: 1rem 0;
+}
+
+.entry-time {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
+}
+
+.entries-list .entry-card {
+    margin-bottom: 1.5rem;
+}
+
+.entry-card hr {
+    margin: 1rem 0;
+    border: none;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Dashboard Sections */
+.summary-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.summary-section h2 {
+    color: var(--secondary-color);
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+}
+
+.gratitude-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.keywords-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.keyword-card {
+    background: rgba(52, 152, 219, 0.1);
+    padding: 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.keyword-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.keyword-text {
+    font-weight: 600;
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
+}
+
+.keyword-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.bar-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.keyword-count {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    text-align: right;
+}
+
+.summary-note {
+    text-align: center;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+    font-style: italic;
+}
+
+.no-data {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-color);
+    font-style: italic;
+}
+
+.entries-list {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 1rem;
+    margin-right: -1rem;
+}
+
+.entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.entry-count {
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    background: rgba(52, 152, 219, 0.1);
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+}
+
+.keywords-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.keyword-card {
+    display: flex;
+    flex-direction: column;
+    background: rgba(52, 152, 219, 0.1);
+    padding: 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.keyword-bar {
+    flex-grow: 1;
+    margin: 0.5rem 0;
+}
+
+/* Scrollbar styling */
+.entries-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.entries-list::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+.entries-list::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+.entries-list::-webkit-scrollbar-thumb:hover {
+    background: #2980b9;
+}
+
+/* Dashboard Styles */
+.entries-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.day-entries {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.date-header {
+    color: var(--secondary-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.entry-card {
+    background: rgba(52, 152, 219, 0.05);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.entry-card:last-child {
+    margin-bottom: 0;
+}
+
+.entry-time {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.entry-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-icon {
+    font-size: 1.2rem;
+}
+
+.stat-value {
+    color: var(--text-color);
+}
+
+.entry-gratitude {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    color: var(--text-color);
+    font-style: italic;
+}
+
+.no-data {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-color);
+    font-style: italic;
+    background: white;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
 }
